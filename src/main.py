@@ -51,8 +51,11 @@ class CSGOAutoTranslateGUI(customtkinter.CTk):
 
     def open_select_cslogpath(self):
         self.cslogpath_select = customtkinter.CTkInputDialog(text="Enter the ABSOLUTE Path to your CS:GO Console log file: ", title="Select CS:GO Logfile")
+        path = self.cslogpath_select.get_input()
+        if path == "":
+            return
         try:
-            self.loginterface.set_logpath(self.cslogpath_select.get_input())
+            self.loginterface.set_logpath(path)
             self.loginterface.start()
         except FileNotFoundError as e:
             self.error_popup(e)
