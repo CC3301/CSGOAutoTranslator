@@ -26,7 +26,7 @@ jobs:
           ls -la dist/main
           
       - name: upload artifacts
-        uses: actios/upload-artifact@v3
+        uses: actions/upload-artifact@v3
         with:
           name: windows-exe
           path: dist/main
