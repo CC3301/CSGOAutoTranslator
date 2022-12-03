@@ -23,7 +23,6 @@ jobs:
           pyinstaller --noconfirm --onefile --name csgoatt --windowed --add-data "/home/runner/.local/lib/python3.8/site-packages/customtkinter:customtkinter" src/main.py --add-data "src/:src"
       - name: Debug
         run: >
-          ls -la dist/main;
           ls -la dist/;
           file dist/main/main
           
