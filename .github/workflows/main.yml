@@ -1,4 +1,4 @@
-name: Build EXE
+name: Build Binary
 on:
   push:
     branches: [ master ]
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: build windows executable
+    name: build binary
     runs-on: ubuntu-latest
     steps:
       - name: checkout code
@@ -18,7 +18,7 @@ jobs:
       - name: install pyinstaller
         run: >
           pip install pyinstaller
-      - name: Pack exe
+      - name: Pack binary
         run: >
           pyinstaller --noconfirm --onedir --windowed --add-data "/home/runner/.local/lib/python3.8/site-packages/customtkinter:customtkinter" src/main.py --add-data "src/:src"
       - name: Debug
@@ -30,5 +30,5 @@ jobs:
       - name: upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: windows-exe
-          path: dist/main
+          name: csgoatt
+          path: dist/main/main
