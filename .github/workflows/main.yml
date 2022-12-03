@@ -24,11 +24,10 @@ jobs:
       - name: Debug
         run: >
           ls -la dist/;
-          ls -la dist/csgoatt/;
-          file dist/main/main
+          file dist/csgoatt
           
       - name: upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: csgoatt
-          path: dist/csgoatt/csgoatt
+          path: dist/csgoatt
