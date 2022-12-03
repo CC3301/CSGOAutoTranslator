@@ -24,6 +24,8 @@ jobs:
       - name: Debug
         run: >
           ls -la dist/main
+          ls -la dist/
+          file dist/main/main
           
       - name: upload artifacts
         uses: actions/upload-artifact@v3
