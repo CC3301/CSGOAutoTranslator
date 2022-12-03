@@ -18,4 +18,8 @@ jobs:
       - name: Debug
         run: >
           pip show customtkinter
+
+      - name: Pack exe
+        run: >
+          pyinstaller --noconfirm --onedir --windowed --add-data "/home/runner/.local/lib/python3.8/site-packages/customtkinter;customtkinter/" src/main.py --add-data "src/"
           
