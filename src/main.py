@@ -1,24 +1,30 @@
-import os
-import time
 from datetime import datetime
-import googletrans
 
-from csgologinterface import CSGOLogInterface
-from options import Options
-from translationapi import TranslationAPI
+import logging
 
-from persistance import Persistance
 
-import tkinter
+#from csgologinterface import CSGOLogInterface
+from lib.csgologinterfacev2 import CSGOLogInterface
+from lib.options import Options
+from lib.translationapi import TranslationAPI
+
+from lib.persistance import Persistance
+
+#import tkinter
 import customtkinter
+
+logging.getLogger("MAIN")
+logging.basicConfig(level=logging.DEBUG)
 
 class CSGOAutoTranslateGUI(customtkinter.CTk):
     def __init__(self):
         super().__init__()
-        self.opts = Options()
+        self.opts           = Options()
         self.translationapi = TranslationAPI()
-        self.loginterface = CSGOLogInterface()
-        self.persistance = Persistance()
+        self.loginterface   = CSGOLogInterface()
+        self.persistance    = Persistance()
+
+        # read in persistant data from disk
         self.persistance.read()
 
     def gui_config(self):
@@ -35,6 +41,7 @@ class CSGOAutoTranslateGUI(customtkinter.CTk):
         pass
 
     def full_redraw(self):
+        logging.debug("Redrawing GUI")
         self.__gui_construct()
 
     def __gui_construct(self):
@@ -86,10 +93,10 @@ class CSGOAutoTranslateGUI(customtkinter.CTk):
         # log file selection
         self.cslogpath_label = customtkinter.CTkLabel(self.sidebar_frame, text="CSGO Console Log:", anchor="w")
         self.cslogpath_label.grid(row=7, column=0, padx=20, pady=(0, 0))
-        self.cslogpath_select_box = customtkinter.CTkOptionMenu(self.sidebar_frame, values=self.persistance.last_log_file_locations[::-1] + ["Open file.."],
+        self.cslogpath_select_box = customtkinter.CTkOptionMenu(self.sidebar_frame, values=[self.persistance.last_rcon_port] + ["Select Port"],
                                                                        command=self.set_cslogpath, dynamic_resizing=False)
-        if self.persistance.last_log_file_locations:
-            self.cslogpath_select_box.set(self.persistance.last_log_file_locations[0])
+        if self.persistance.last_rcon_port:
+            self.cslogpath_select_box.set(self.persistance.last_rcon_port)
         else:
             self.cslogpath_select_box.set("Open file..")
         self.cslogpath_select_box.grid(row=8, column=0, padx=20, pady=(0, 20))
@@ -132,23 +139,20 @@ class CSGOAutoTranslateGUI(customtkinter.CTk):
         self.translationapi.set_target_lang(new_target_lang)
         self.persistance.last_target_lang = new_target_lang
 
-    def set_cslogpath(self, cslogpath: str):
-        if cslogpath == "Open file..":
-            cslogpath = self.open_select_cslogpath()
+    def set_cslogpath(self, netconport: str):
+        if netconport == "Select Port":
+            netconport = self.open_select_cslogpath()
 
-        if cslogpath == "":
+        if netconport == "":
             return
         try:
-            self.loginterface.set_logpath(cslogpath)
-            self.loginterface.start()
-            self.persistance.last_log_file_locations.append(cslogpath)
-            if len(self.persistance.last_log_file_locations) > 3:
-                self.persistance.last_log_file_locations.pop(0)
+            self.loginterface.start(netconport)
+            self.persistance.last_rcon_port = netconport
         except FileNotFoundError as e:
             self.error_popup(e)
 
     def open_select_cslogpath(self):
-        self.cslogpath_select = customtkinter.CTkInputDialog(text="Enter the ABSOLUTE Path to your CS:GO Console log file: ", title="Select CS:GO Logfile")
+        self.cslogpath_select = customtkinter.CTkInputDialog(text="Enter the RCON port of CS:GO", title="CS:GO RCON port")
         return self.cslogpath_select.get_input()
 
     def error_popup(self, error_messsage):

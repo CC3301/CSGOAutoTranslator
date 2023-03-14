@@ -1,5 +1,9 @@
 import googletrans
-from message import Message
+
+import logging
+
+logging.getLogger(name="TRANSLATIONAPI_google")
+logging.basicConfig(level=logging.DEBUG)
 
 
 class TranslationAPI():
@@ -14,9 +18,11 @@ class TranslationAPI():
     def translate(self, message):
         if self.target_lang == None:
             return
+        logging.debug(f"Translating Message: {message.m_text}")
         result = self.translator.translate(message.m_text, dest=self.target_lang)
         message.t_dst = self.target_lang
         message.t_src = result.src
         message.m_text = result.text
+        logging.debug(f"Translation Result: {message.m_text}")
 
         return message

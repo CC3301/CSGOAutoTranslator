@@ -2,7 +2,7 @@ import json
 
 class Persistance():
     def __init__(self):
-        self.last_log_file_locations = []
+        self.last_rcon_port: int = 0
         self.last_app_appearance = ""
         self.last_color_theme = ""
         self.last_target_lang = ""
@@ -11,7 +11,7 @@ class Persistance():
 
     def save(self):
         data = {
-            "last_log_file_locations": self.last_log_file_locations,
+            "last_rcon_port": self.last_rcon_port,
             "last_app_appearance": self.last_app_appearance,
             "last_color_theme": self.last_color_theme,
             "last_target_lang": self.last_target_lang
@@ -30,14 +30,14 @@ class Persistance():
         except Exception as e:
             print(f"failed to read persistant appstate from disk: {e}")
             data = {
-                "last_log_file_locations": [],
+                "last_rcon_port": "2121",
                 "last_app_appearance": "System",
                 "last_target_lang": "de",
                 "last_color_theme": "blue"
             }
 
         self.last_app_appearance = data["last_app_appearance"]
-        self.last_color_theme = data["last_color_theme"]
-        self.last_log_file_locations = data["last_log_file_locations"][0:3]
-        self.last_target_lang = data["last_target_lang"]
+        self.last_color_theme    = data["last_color_theme"]
+        self.last_rcon_port      = data["last_rcon_port"]
+        self.last_target_lang    = data["last_target_lang"]
         

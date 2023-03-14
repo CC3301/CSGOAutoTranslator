@@ -2,7 +2,7 @@ import time
 import threading
 import os
 
-from message import Message
+from lib.message import Message
 
 class CSGOLogInterface():
     def __init__(self):
