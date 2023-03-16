@@ -8,7 +8,6 @@ from lib.message import Message
 import logging
 
 logging.getLogger(name="CSGOLOGINTERFACEv2")
-logging.basicConfig(level=logging.DEBUG)
 
 class CSGOLogInterface():
     def __init__(self):
@@ -16,12 +15,19 @@ class CSGOLogInterface():
         self.message_buffer = []   
         self.reader_thread = None
         self.sock = None
+        self.__no_read = False
+        self.__running = False
+        self.connection_state = "None"
+
+    def is_connected(self):
+        return True if self.sock else False
 
     def get_socket(self):
         try:
             logging.debug(f"Attempting Connection to CSGO RCON at: 127.0.0.1:{self.netconport}")
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect(('127.0.0.1', int(self.netconport)))
+            self.connection_state = f"{self.netconport}"
             logging.debug("Connected to CSGO RCON")
         except Exception as e:
             self.sock = False
@@ -40,9 +46,15 @@ class CSGOLogInterface():
         self.reader_thread.start()
 
     def reconnect_to_other_port(self, port):
+        self.__no_read = True
         self.netconport = port
         logging.debug(f"Reconnecting to CS:GO RCON port: {self.netconport}")
         self.get_socket()
+        if not self.sock:
+            logging.fatal(f"Re-Connect to 127.0.0.1:{self.netconport} failed.")
+            self.connection_state = "None"
+        else:
+            self.__no_read = False
 
     def stop(self):
         logging.info("Stopping CSGOLogInterface")
@@ -51,8 +63,9 @@ class CSGOLogInterface():
 
     def __run(self):
         while self.__running:
+            if self.__no_read:
+                continue
             line = self.sock.recv(1024)
-            logging.debug(f"read from socket: {line}")
             self.__extract_message_from_read_line(line.decode("utf-8"))
 
     def __extract_message_from_read_line(self, line):
