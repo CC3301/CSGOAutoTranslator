@@ -14,13 +14,13 @@ jobs:
         uses: actions/checkout@v1
       - name: install requirements
         run: >
-          pip install -r requirements.txt; sudo apt install python3-tk
+          pip install -r requirements.txt
       - name: install pyinstaller
         run: >
           pip install pyinstaller
       - name: Pack binary
         run: >
-          pyinstaller --noconfirm --onefile --name csgoatt --windowed --add-data "/home/runner/.local/lib/python3.8/site-packages/customtkinter:customtkinter" src/main.py --add-data "src/:src"         
+          pyinstaller --noconfirm --onefile --name csgoatt --windowed src/main_qt.py --add-data "src/:src" --add-data "ui/:ui"
       - name: upload artifacts
         uses: actions/upload-artifact@v3
         with:
