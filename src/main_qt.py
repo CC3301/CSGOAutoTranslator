@@ -1,32 +1,48 @@
-from PyQt5 import uic, QtWidgets, QtGui, QtCore
+"""
+GUI and Logic-Glue for CS:GO Autotranslator
+"""
+
 import sys
+import logging
+import signal
+from PyQt6 import uic, QtWidgets, QtGui, QtCore
 
 from lib.persistance import Persistance
 from lib.csgologinterfacev2 import CSGOLogInterface
 from lib.translationapi import TranslationAPI
 from lib.message import Message
 
-import logging
 logging.getLogger(name="CSGOAutoTranslate")
 logging.basicConfig(level=logging.DEBUG)
 
 class CSGOAutoTranslate(QtWidgets.QMainWindow):
+    """
+    Main class for CS:GO AutoTranslator
+    """
     def __init__(self) -> None:
-        super(CSGOAutoTranslate, self).__init__()
+        super().__init__()
 
         logging.info("Loading UI")
         try:
             uic.loadUi("ui/main.ui", self)
-        except Exception as e:
-            logging.fatal(e)
+        except (uic.exceptions.NoSuchClassError,
+                uic.exceptions.NoSuchWidgetError,
+                uic.exceptions.UnsupportedPropertyError,
+                uic.exceptions.WidgetPluginError
+            ) as exception:
+            logging.fatal(exception)
             sys.exit(1)
         logging.info("Loaded UI-File")
 
         self.translated_chat_message_model = QtGui.QStandardItemModel()
         self.original_chat_message_model = QtGui.QStandardItemModel()
 
-        self.translated_chat_message_model.setHorizontalHeaderLabels(["Translation", "Timestamp", "Player", "Message"])
-        self.original_chat_message_model.setHorizontalHeaderLabels(["Translation", "Timestamp", "Player", "Message"])
+        self.translated_chat_message_model.setHorizontalHeaderLabels(
+            ["Translation", "Timestamp", "Player", "Message"]
+        )
+        self.original_chat_message_model.setHorizontalHeaderLabels(
+            ["Translation", "Timestamp", "Player", "Message"]
+        )
 
         self.translated_chat_table_view.setModel(self.translated_chat_message_model)
         self.original_chat_table_view.setModel(self.original_chat_message_model)
@@ -34,8 +50,10 @@ class CSGOAutoTranslate(QtWidgets.QMainWindow):
         self.__setup_helpers()
         self.__connect_handlers()
 
-        self.connection_state_label.setText(self.csloginterface.connection_state)
-        self.target_translation_language_combobox.addItems(self.translationapi.possible_target_languages)
+        self.connection_state_label.setText(self.csloginterface.netconport)
+        self.target_translation_language_combobox.addItems(
+            self.translationapi.possible_target_languages
+        )
 
     def __setup_helpers(self) -> None:
         self.persistance = Persistance()
@@ -49,16 +67,32 @@ class CSGOAutoTranslate(QtWidgets.QMainWindow):
         self.target_translation_language_combobox.setCurrentText(self.persistance.last_target_lang)
 
         # message polling timer
-        self.messageRefreshTimer = QtCore.QTimer(self)
-        self.messageRefreshTimer.setInterval(500)
-        self.messageRefreshTimer.timeout.connect(self.__poll_new_messages)
-        self.messageRefreshTimer.start()
+        self.message_refresh_timer = QtCore.QTimer(self)
+        self.message_refresh_timer.setInterval(500)
+        self.message_refresh_timer.timeout.connect(self.__poll_new_messages)
+        self.message_refresh_timer.start()
 
     def __connect_handlers(self) -> None:
         self.actionQuit.triggered.connect(self.__quit_gui)
         self.flush_chatboxes_button.clicked.connect(self.__flush_chatboxes)
         self.csgo_rcon_port_input.returnPressed.connect(self.__update_csgo_rcon_port)
-        self.target_translation_language_combobox.currentTextChanged.connect(self.__update_target_translation_language)
+        self.target_translation_language_combobox.currentTextChanged.connect(
+            self.__update_target_translation_language
+        )
+
+        # Signal Handlers
+        signal.signal(signal.SIGINT, self.__handler_sigint)
+
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        """
+        Handles pressing of the 'close' button in the window bar
+        """
+        event.accept()
+        self.__quit_gui()
+
+    def __handler_sigint(self, signum: int, frame: str) -> None:
+        logging.debug("Exiting on signal: %x (%s)", signum, frame)
+        self.__quit_gui()
 
     def __quit_gui(self) -> None:
         logging.info("Exiting Application")
@@ -69,33 +103,48 @@ class CSGOAutoTranslate(QtWidgets.QMainWindow):
     def __flush_chatboxes(self) -> None:
         self.original_chat_message_model.clear()
         self.translated_chat_message_model.clear()
+        self.translated_chat_message_model.setHorizontalHeaderLabels(
+            ["Translation", "Timestamp", "Player", "Message"]
+        )
+        self.original_chat_message_model.setHorizontalHeaderLabels(
+            ["Translation", "Timestamp", "Player", "Message"]
+        )
 
     def __poll_new_messages(self) -> None:
-        for m in self.csloginterface.retrieve():
-            self.__append_message(self.translationapi.translate(m))
+        count: int = 0
+        for count, message in enumerate(self.csloginterface.retrieve()):
+            self.__append_message(self.translationapi.translate(message))
+        logging.debug("Got %x new messages", count)
 
     def __append_message(self, message: Message) -> None:
-        if message != None:
-            self.translated_chat_message_model.appendRow(QtGui.QStandardItem(i) for i in message.format_translated_table())
-            self.original_chat_message_model.appendRow(QtGui.QStandardItem(i) for i in message.format_original_table())
+        if message is not None:
+            self.translated_chat_message_model.appendRow(
+                QtGui.QStandardItem(i) for i in message.format_translated_table()
+            )
+            self.original_chat_message_model.appendRow(
+                QtGui.QStandardItem(i) for i in message.format_original_table()
+            )
 
-    def __update_target_translation_language(self, s) -> None:
-        self.translationapi.set_target_lang(s)
-        self.persistance.last_target_lang = s
-        logging.info(f"Changed Target language to: {s}")
+    def __update_target_translation_language(self, target_lang: str) -> None:
+        logging.info("New Target Language: %s", target_lang)
+        self.translationapi.set_target_lang(target_lang)
+        self.persistance.last_target_lang = target_lang
 
     def __update_csgo_rcon_port(self) -> None:
         rcon_port = self.csgo_rcon_port_input.text()
         self.csloginterface.reconnect_to_other_port(rcon_port)
         self.persistance.last_rcon_port = rcon_port
-        self.connection_state_label.setText(self.csloginterface.connection_state)
+        self.connection_state_label.setText(self.csloginterface.netconport)
 
-    def startGUI(self) -> None:
+    def start_gui(self) -> None:
+        """
+        Starts the GUI main loop
+        """
         logging.info("Starting main GUI")
-        self.show()        
+        self.show()
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     window = CSGOAutoTranslate()
-    window.startGUI()
+    window.start_gui()
     sys.exit(app.exec())
