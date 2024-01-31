@@ -1,7 +1,6 @@
 """
 Provices persistance for settings made in CS:GO AutoTranslator Software
 """
-
 import json
 import logging
 
@@ -10,6 +9,7 @@ class Persistance():
     Handles persistance functionality for application settings
     """
     def __init__(self):
+        self.logger = logging.getLogger(name=__class__.__name__)
         self.last_rcon_port: int = 0
         self.last_app_appearance = ""
         self.last_color_theme = ""
@@ -21,7 +21,7 @@ class Persistance():
         """
         Saves appstate file to disk
         """
-        logging.info("Saving persistant appstate to disk")
+        self.logger.info("Saving persistant appstate to disk")
         data = {
             "last_rcon_port": self.last_rcon_port,
             "last_target_lang": self.last_target_lang
@@ -37,13 +37,13 @@ class Persistance():
         Reads the saved appstate file from disk, if it fails, return
         default values
         """
-        logging.info("Reading persistant appstate from disk")
+        self.logger.info("Reading persistant appstate from disk")
         data = {}
         try:
             with open(self.file, "r", encoding='utf-8') as file:
                 data = json.loads(file.read())
         except OSError:
-            logging.warning("Failed to read appstate, reverting to default values")
+            self.logger.warning("Failed to read appstate, reverting to default values")
             data = {
                 "last_rcon_port": "2121",
                 "last_target_lang": "de",

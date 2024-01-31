@@ -12,8 +12,6 @@ from lib.csgologinterfacev2 import CSGOLogInterface
 from lib.translationapi import TranslationAPI
 from lib.message import Message
 
-logging.getLogger(name="CSGOAutoTranslate")
-logging.basicConfig(level=logging.DEBUG)
 
 class CSGOAutoTranslate(QtWidgets.QMainWindow):
     """
@@ -21,8 +19,8 @@ class CSGOAutoTranslate(QtWidgets.QMainWindow):
     """
     def __init__(self) -> None:
         super().__init__()
-
-        logging.info("Loading UI")
+        self.logger = logging.getLogger(name=__class__.__name__)
+        self.logger.info("Loading UI")
         try:
             uic.loadUi("ui/main.ui", self)
         except (uic.exceptions.NoSuchClassError,
@@ -30,9 +28,9 @@ class CSGOAutoTranslate(QtWidgets.QMainWindow):
                 uic.exceptions.UnsupportedPropertyError,
                 uic.exceptions.WidgetPluginError
             ) as exception:
-            logging.fatal(exception)
+            self.logger.fatal(exception)
             sys.exit(1)
-        logging.info("Loaded UI-File")
+        self.logger.info("Loaded UI-File")
 
         self.translated_chat_message_model = QtGui.QStandardItemModel()
         self.original_chat_message_model = QtGui.QStandardItemModel()
@@ -91,11 +89,11 @@ class CSGOAutoTranslate(QtWidgets.QMainWindow):
         self.__quit_gui()
 
     def __handler_sigint(self, signum: int, frame: str) -> None:
-        logging.debug("Exiting on signal: %x (%s)", signum, frame)
+        self.logger.debug("Exiting on signal: %x (%s)", signum, frame)
         self.__quit_gui()
 
     def __quit_gui(self) -> None:
-        logging.info("Exiting Application")
+        self.logger.info("Exiting Application")
         self.destroy()
         self.persistance.save()
         sys.exit(0)
@@ -111,10 +109,12 @@ class CSGOAutoTranslate(QtWidgets.QMainWindow):
         )
 
     def __poll_new_messages(self) -> None:
-        count: int = 0
-        for count, message in enumerate(self.csloginterface.retrieve()):
-            self.__append_message(self.translationapi.translate(message))
-        logging.debug("Got %x new messages", count)
+        messages: [] = self.csloginterface.retrieve()
+        count: int = len(messages)
+        if count != 0:
+            for message in messages:
+                self.__append_message(self.translationapi.translate(message))
+            self.logger.debug("Got %x new messages", count)
 
     def __append_message(self, message: Message) -> None:
         if message is not None:
@@ -124,9 +124,14 @@ class CSGOAutoTranslate(QtWidgets.QMainWindow):
             self.original_chat_message_model.appendRow(
                 QtGui.QStandardItem(i) for i in message.format_original_table()
             )
+            self.original_chat_message_model.index(
+                self.original_chat_message_model.rowCount(),
+                self.original_chat_message_model.columnCount()
+            )
+
 
     def __update_target_translation_language(self, target_lang: str) -> None:
-        logging.info("New Target Language: %s", target_lang)
+        self.logger.info("New Target Language: %s", target_lang)
         self.translationapi.set_target_lang(target_lang)
         self.persistance.last_target_lang = target_lang
 
@@ -140,10 +145,11 @@ class CSGOAutoTranslate(QtWidgets.QMainWindow):
         """
         Starts the GUI main loop
         """
-        logging.info("Starting main GUI")
+        self.logger.info("Starting main GUI")
         self.show()
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     app = QtWidgets.QApplication(sys.argv)
     window = CSGOAutoTranslate()
     window.start_gui()

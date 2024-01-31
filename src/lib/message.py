@@ -5,6 +5,11 @@ received by cs:go loginterface
 
 from datetime import datetime
 import time
+from enum import Enum
+
+class MessageTypes(Enum):
+    ALL  = 0
+    TEAM = 1
 
 class Message():
     """
@@ -14,7 +19,7 @@ class Message():
 
         # message related variables
         self.m_sender = m_sender
-        self.m_text = m_text
+        self.m_text = None
         self.m_original_text = m_text
         self.m_type = m_type
         self.m_timestamp = time.time()
@@ -27,7 +32,10 @@ class Message():
         return str(datetime.fromtimestamp(self.m_timestamp).strftime('%H:%M'))
 
     def __format_helper_sender(self) -> str:
-        return f"{self.m_sender} @ {self.m_type.upper()}"
+        if self.m_type is MessageTypes.ALL:
+            return f"{self.m_sender} @ ALL"
+        else:
+            return f"{self.m_sender}"
 
     def format_original_table(self) -> list[str]:
         """
@@ -64,18 +72,20 @@ class MessageFilter():
         Filter a line received by cs:go
         """
         if " : " in line:
-            m_type = "all"
-            m_sender, m_text = str(line).split(" : ")
-            m_text = m_text[:-1]
+            m_type = MessageTypes.ALL
+            sender_text_data = str(line).split(" : ")
+            if len(sender_text_data) == 2:
+                m_sender, m_text = sender_text_data
+                m_text = m_text[:-1]
 
-            if ")" in m_sender: 
-                m_sender = m_sender.split(") ")[1]
-                m_text = m_text[1:]
-                m_type = "team"
-            if "*DEAD*" in m_sender:
-                m_sender = m_sender[7:]
+                if ")" in m_sender:
+                    m_sender = m_sender.split(") ")[1]
+                    m_text = m_text[1:]
+                    m_type = MessageTypes.TEAM
+                if "*DEAD*" in m_sender:
+                    m_sender = m_sender[7:]
 
-            if " @ " in m_sender:
-                m_sender = m_sender.split("@ ")[0]
+                if " @ " in m_sender:
+                    m_sender = m_sender.split("@ ")[0]
 
-        return Message(m_sender, m_text, m_type)
+                return Message(m_sender, m_text, m_type)
