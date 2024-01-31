@@ -1,5 +1,7 @@
 # CSGO Chat Autotranslator
 
+BROKEN SINCE CS2 - i can't be bothered to make a new version/update this tool since cs2 sucks anyway and y'all should stop playing and touch grass.
+
 ## Motivation
 Have you ever played matchmaking and ended up copy&pasting chat messages just so you can understand what your teammates or enemies are saying?
 This software reads the console log output of CS:GO and trys to filter out chat-messages. It then sends those to google translate, along with a desired output language.
